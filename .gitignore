@@ -1,0 +1,10 @@
+# Ignore files and directories for a project
+
+# General
+.env
+.env.bak
+
+# Build Files
+etc-dnsmasq.d/
+etc-pihole/
+unbound/

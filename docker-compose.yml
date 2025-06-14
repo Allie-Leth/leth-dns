@@ -1,0 +1,39 @@
+services:
+  pihole:
+    image: "${PIHOLE_IMAGE}:${PIHOLE_TAG}"
+    container_name: "${PIHOLE_HOSTNAME}"
+    network_mode: host
+    hostname: "${PIHOLE_HOSTNAME}"
+    environment:
+      TZ: "${TZ}"
+      WEBPASSWORD: "${PIHOLE_WEBPASSWORD}"
+      PIHOLE_DNS_: "${PIHOLE_DNS_SERVER}"
+      # To enable Pi-hole’s DHCP later, uncomment:
+      # DHCP_ACTIVE: "true"
+    volumes:
+      - ./etc-pihole:/etc/pihole
+      - ./etc-dnsmasq.d:/etc/dnsmasq.d
+    restart: unless-stopped
+    # cap_add:
+    #   - NET_ADMIN     # only needed if you turn on DHCP_ACTIVE
+    # I use DD-wrt, so I let that handle DHCP. 
+
+  unbound:
+    image: "${UNBOUND_IMAGE}:${UNBOUND_TAG}"
+    container_name: unbound
+    network_mode: host
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound
+    restart: unless-stopped
+
+  exporter:
+    image: "${EXPORTER_IMAGE}:${EXPORTER_TAG}"
+    container_name: pihole-exporter
+    network_mode: host
+    environment:
+      PIHOLE_HOSTNAME: "127.0.0.1"
+      PIHOLE_PASSWORD: "${PIHOLE_WEBPASSWORD}"
+      PORT: "${EXPORTER_PORT}"
+    restart: unless-stopped
+    depends_on:
+      - pihole
