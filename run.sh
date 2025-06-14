@@ -74,8 +74,8 @@ fi
 
 # ───────── password ─────────
 echo
-V[PIHOLE_WEBPASSWORD]=$(openssl rand -base64 18)
-echo "Generated password: ${V[PIHOLE_WEBPASSWORD]}"; line
+V[WEBPASSWORD]=$(openssl rand -base64 18)
+echo "Generated password: ${V[WEBPASSWORD]}"; line
 
 # ───────── preview & confirm ─────────
 echo ".env will contain:"; for k in "${!V[@]}"; do printf '%-24s = %s\n' "$k" "${V[$k]}"; done; line
@@ -97,5 +97,5 @@ docker compose up -d
 line
 echo "Pi-hole UI : https://${DNS_UI_ALIAS}/admin"
 echo "Username   : admin"
-echo "Password   : ${V[PIHOLE_WEBPASSWORD]}"
+echo "Password   : ${V[WEBPASSWORD]}"
 line
