@@ -1,0 +1,44 @@
+services:
+  pihole:
+    image: "${PIHOLE_IMAGE}:${PIHOLE_TAG}"
+    container_name: "${PIHOLE_HOSTNAME}"
+    network_mode: host
+    hostname: "${PIHOLE_HOSTNAME}"
+    environment:
+      TZ: "${TZ}"
+      # ―― Pi-hole v6 renamed every var under an FTLCONF_* umbrella ――
+      FTLCONF_webserver_api_password: "${PIHOLE_PASSWORD}"
+      FTLCONF_dns_upstreams: "${UPSTREAM_DNS}"
+      FTLCONF_MISC_ETC_DNSMASQ_D: "true"     # allow our custom .conf mount
+      # To enable Pi-hole’s DHCP later, uncomment and rename accordingly:
+      # FTLCONF_dhcp_active: "true"
+    volumes:
+      - ./etc-pihole:/etc/pihole
+      - ./etc-dnsmasq.d:/etc/dnsmasq.d
+    restart: unless-stopped
+    # cap_add:
+    #   - NET_ADMIN     # only needed if you turn on DHCP_ACTIVE
+    # I use DD-wrt, so I let that handle DHCP. 
+
+  unbound:
+    image: "${UNBOUND_IMAGE}:${UNBOUND_TAG}"
+    container_name: unbound
+    network_mode: bridge        # detach from host and publish explicit port
+    ports:
+      - "5335:53/tcp"
+      - "5335:53/udp"
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound
+    restart: unless-stopped
+
+  exporter:
+    image: "${EXPORTER_IMAGE}:${EXPORTER_TAG}"
+    container_name: pihole-exporter
+    network_mode: host
+    environment:
+      PIHOLE_HOSTNAME: "127.0.0.1"
+      PIHOLE_PASSWORD: "${PIHOLE_PASSWORD}"
+      PORT: "${EXPORTER_PORT}"
+    restart: unless-stopped
+    depends_on:
+      - pihole
