@@ -41,6 +41,11 @@ TZ="${ZONES[$(select_number "Zone" ZONES)-1]}"
 
 echo; echo "Chosen TZ: $TZ"; line
 
+# ─── ask for your Pi-hole UI alias ───
+DNS_UI_ALIAS=$(read_default "Enter the DNS alias for Pi-hole UI" "dns.ls")
+# strip surrounding whitespace and a single leading dot, nothing more
+DNS_UI_ALIAS="$(echo "$DNS_UI_ALIAS" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^\.//')"
+
 # ───────────── CONFIG MODE ─────────────
 echo "Config mode:"; echo "  1) Default values (auto-generated password)"; echo "  2) Custom values"
 MODE=$(read_default "Select 1 or 2" "1"); MODE=${MODE//[[:space:]]/}; line
@@ -78,11 +83,19 @@ read -rp "Proceed? [y/N]: " ok; [[ "${ok,,}" == "y" ]] || { echo "Aborted."; exi
 
 # ───────── write env & launch ─────────
 { echo "# auto-generated $(date)"; for k in "${!V[@]}"; do echo "$k=${V[$k]}"; done; } > .env
+
+# ─── autodetect host IP and serve pihole.ls via Pi-hole ───
+# (so https://pihole.ls/admin will resolve to your Pi’s IP)
+HOST_IP=$(ip route get 1.1.1.1 2>/dev/null \
+           | awk '/src/ { for(i=1;i<=NF;i++) if($i=="src") print $(i+1) }')
+echo "address=/${DNS_UI_ALIAS}/${HOST_IP:-127.0.0.1}" \
+  > etc-dnsmasq.d/02-local-${DNS_UI_ALIAS}.conf
+
 mkdir -p etc-pihole etc-dnsmasq.d unbound
 docker compose pull
 docker compose up -d
 line
-echo "Pi-hole UI : http://<Pi-IP>/"
+echo "Pi-hole UI : https://${DNS_UI_ALIAS}/admin"
 echo "Username   : admin"
 echo "Password   : ${V[PIHOLE_WEBPASSWORD]}"
 line
