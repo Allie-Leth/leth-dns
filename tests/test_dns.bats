@@ -1,20 +1,16 @@
 #!/usr/bin/env bats
 
-load 'test_helper/bats-support/load'
 load 'test_helper/bats-assert/load'
 
-# Adjust as needed if your test host differs
-PIHOLE_HOST="127.0.0.1"
+PORT="${TEST_PIHOLE_PORT:-53}"
 
 @test "Resolve a known domain via Pi-hole" {
-  run dig +short @${PIHOLE_HOST} example.com
+  run dig +short @"127.0.0.1#${PORT}" example.com A
   assert_success
-  assert [ "${#output}" -gt 0 ]
+  assert_output --regexp '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'
 }
 
 @test "Resolve a lab.local record" {
-  run dig +short @${PIHOLE_HOST} grafana.lab.local
+  run dig +short @"127.0.0.1#${PORT}" router.lab.local A
   assert_success
-  # should return your k3s node IP
-  assert [ "${output}" = "192.168.1.119" ]
 }

@@ -1,0 +1,72 @@
+stages: [test]
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  COMPOSE_HTTP_TIMEOUT: 180
+  DOCKER_TLS_CERTDIR: ""
+
+integration-test:
+  image: docker:24
+  stage: test
+  services:
+    - name: docker:24-dind
+      command: ["--registry-mirror=https://registry-1.docker.io"]
+
+  before_script:
+    - apk add --no-cache bind-tools bats curl bash
+    - git submodule update --init --recursive
+
+    # ---------------- override for CI ----------------
+    #   * no host network allowed in dind → run bridge
+    #   * expose Pi-hole on 8053, Unbound on 5335
+    cat > docker-compose.override.yml <<'YML'
+    services:
+      pihole:
+        network_mode: bridge
+        ports:
+          - "8053:53/tcp"
+          - "8053:53/udp"
+      unbound:
+        network_mode: bridge
+        ports:
+          - "5335:53/tcp"
+          - "5335:53/udp"
+    YML
+
+    # throw-away env suitable for CI
+    cat > .env <<'EOF'
+    TZ=UTC
+    PIHOLE_IMAGE=pihole/pihole
+    PIHOLE_TAG=2025.06.2
+    PIHOLE_HOSTNAME=pihole
+    PIHOLE_WEBPASSWORD=testpass
+    PIHOLE_DNS_SERVER=unbound#53
+    UNBOUND_IMAGE=mvance/unbound
+    UNBOUND_TAG=latest
+    EXPORTER_IMAGE=ekofr/pihole-exporter
+    EXPORTER_TAG=latest
+    EXPORTER_PORT=9617
+    EOF
+
+  script:
+    # pull & start stack
+    - docker compose pull
+    - docker compose up -d
+    # wait until DNS answers on port 8053
+    - |
+      for i in $(seq 1 120); do
+        dig +time=1 +tries=1 @127.0.0.1 -p 8053 . soa &>/dev/null && break
+        sleep 1
+        [ $i -eq 120 ] && { echo "Pi-hole never became ready"; exit 1; }
+      done
+    # wait until exporter exposes metrics
+    - |
+      for i in $(seq 1 60); do
+        curl -s http://127.0.0.1:9617/metrics | grep -q pihole_queries_total && break
+        sleep 1
+      done
+    # run bats
+    - export TEST_PIHOLE_PORT=8053
+    - bats tests/
+  after_script:
+    - docker compose down
