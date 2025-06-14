@@ -25,7 +25,6 @@ Self‑hosted, drop‑in DNS for the Leth-Stack homelab.
 
 ```bash
 ./run.sh          # wizard (TZ picker, .env, docker pull)
-./run.sh -t       # deploy ➜ run tests ➜ tear down
 ```
 
 ### B) Manual compose
