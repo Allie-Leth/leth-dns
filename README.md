@@ -1,11 +1,11 @@
-# LethStack – DNS Module
+# LethStack - DNS Module
 
 
 Self‑hosted, drop‑in DNS for the Leth-Stack homelab.
 
-* **Pi‑hole** – network‑wide ad blocking & local records
-* **Unbound** – DNSSEC‑validating recursion
-* **Exporter** – optional Prometheus metrics (minimal footprint)
+* **Pi‑hole** - network‑wide ad blocking & local records
+* **Unbound** - DNSSEC‑validating recursion
+* **Exporter** - optional Prometheus metrics (minimal footprint)
 
 ---
 
@@ -36,8 +36,8 @@ docker compose pull
 docker compose up -d
 ```
 
-Login → `http://<pi-ip>/` (user **admin**, pwd in `.env`).
-Router DHCP → set **DNS 1** to Pi‑hole IP.
+Login -> `http://<pi-ip>/` (user **admin**, pwd in `.env`).
+Router DHCP -> set **DNS 1** to Pi‑hole IP.
 
 ---
 
@@ -62,12 +62,7 @@ tar czf lethstack-$(date +%F).tgz \
   etc-pihole etc-dnsmasq.d unbound
 ```
 
-Restore → untar into repo root, then `docker compose up -d`.
+Restore -> untar into repo root, then `docker compose up -d`.
 
 ---
 
-## High availability
-
-Spin up a second clone of this repo, enable [Gravity‑Sync], and advertise both resolver IPs in router DHCP.
-
-[Gravity‑Sync]: https://github.com/vmstan/gravity-sync
